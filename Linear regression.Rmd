@@ -1,6 +1,6 @@
 ---
-title: "Problem Set 7 Solution"
-author: "Arvind Patel arvindp@mtu.edu"
+
+author: "Arvind Patel"
 date: "October 28, 2018"
 output:
   html_document:
