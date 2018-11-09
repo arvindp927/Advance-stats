@@ -1,5 +1,4 @@
 ---
-title: "Problem Set 4"
 author: "Arvind Patel"
 date: "09/30/2018"
 output:
