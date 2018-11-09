@@ -1,0 +1,154 @@
+---
+author: Arvind Patel
+title: "Time Series Analysis of Canadian Bankrupcy rates"
+output: html_notebook
+---
+
+```{r}
+#Required Libraries
+library(dplyr)
+```
+
+```{r}
+#Reading train and test data
+train <- read.csv("C:/Users/Arvind/Desktop/DS course/Time series analysis/project/train.csv")
+test <- read.csv("C:/Users/Arvind/Desktop/DS course/Time series analysis/project/test.csv")
+train
+```
+
+```{r}
+# view structure of data
+str(train)
+
+# are there any unusual / No data values?
+summary(train)
+
+#use ts function to change into time series
+time <- seq(1987, 2011, length =289)[1:288]
+bankrupcy_rate <-ts(train$Bankruptcy_Rate, start = c(1987,1), frequency = 12)
+unemplyoment_rate <-ts(train$Unemployment_Rate, start = c(1987,1), frequency = 12)
+population <-ts(train$Population, start = c(1987,1), frequency = 12)
+house_price <- ts(train$House_Price_Index, start = c(1987,1), frequency = 12)
+
+# Finding Correlation
+ts_data <- data.frame(time, bankrupcy_rate, unemplyoment_rate, population, house_price)
+cor(ts_data) # we find a very high correlation between time and the bankrupcy rate
+
+#lets plot them
+plot(bankrupcy_rate, xlab  ="year", ylab = "bankrupcy rate", main = "Bankrupcy rate over the years")
+plot(unemplyoment_rate)
+plot(population)
+plot(house_price)
+
+#Preprocessing
+plot(ts(scale(bankrupcy_rate), start = c(1987,1), frequency = 12), type = 'l', col = 'black',main = 'Scaled Plot of Bankruptcy and Potential Covariates, 1987-2010',
+     ylab = 'Scaled bankrupcy rate')
+points(ts(scale(unemplyoment_rate), start = c(1987,1), frequency = 12), type = 'l', col = 'blue')
+points(ts(scale(population), start = c(1987,1), frequency = 12), type = 'l', col = 'cyan')
+points(ts(scale(house_price), start = c(1987,1), frequency = 12), type = 'l', col = 'grey')
+legend(x = 1995, y = 3.3, 
+       legend = c('Bankruptcy', 'Unemployment', 'Population', 'House price'), 
+       col = c('black', 'blue', 'cyan', 'grey'), 
+       lty = c(1, 1, 1,1),
+       lwd = c(2.5, 2.5, 2.5,2.5),
+       bty = 'n')
+
+#Sampling into validation sets
+#split years 1987-2006 into training set 
+#and years 2007-2010 into validation set
+train_sampled <- train[1:240,]
+validation_sampled <- train[241:288,]
+
+train_bank <- ts(train_sampled$Bankruptcy_Rate, start = c(1987, 1), end = c(2006, 12), frequency = 12)
+train_pop <- ts(train_sampled$Population, start = c(1987, 1), end = c(2006, 12), frequency = 12)
+train_unemp <- ts(train_sampled$Unemployment_Rate, start = c(1987, 1), end = c(2006, 12), frequency = 12)
+train_hp <- ts(train_sampled$House_Price_Index, start = c(1987, 1), end = c(2006, 12), frequency = 12)
+
+valid_bank <- ts(validation_sampled$Bankruptcy_Rate, start = c(2007, 1), end = c(2010, 12), frequency = 12)
+valid_pop <- ts(validation_sampled$Population, start = c(2007, 1), end = c(2010, 12), frequency = 12)
+valid_unemp <- ts(validation_sampled$Unemployment_Rate,start = c(2007, 1), end = c(2010, 12), frequency = 12)
+valid_hp <- ts(validation_sampled$House_Price_Index, start = c(2007, 1), end = c(2010, 12), frequency = 12)
+
+
+#Augmented Dickey Fuller test
+library(tseries)
+library(forecast)
+adf.test(train_bank) #Non stationary time series
+
+adf.test(diff(log(train_bank)), alternative="stationary", k=0) #We see that the series is stationary enough to do any kind of time series modelling.
+
+#Next step is to find the right parameters to be used in the ARIMA model. We already know that the 'd' component is 1 as we need 1 difference to make the series stationary. We do this using the Correlation plots. Following are the ACF plots for the series :
+
+acf(log(train_bank))
+
+#the decay of ACF chart is very slow, which means that the population is not stationary. We have already discussed above that we now intend to regress on the difference of logs rather than log directly. Let's see how ACF and PACF curve come out after regressing on the difference.
+
+acf(diff(log(train_bank))) #p value - 1-6
+
+pacf(diff(log(train_bank))) # q value - 1-5
+
+#Tune the parameter
+RMSE_value <- c()
+p_value <- c()
+q_value <- c()
+P_value <- c()
+Q_value <- c()
+D_value <- c()
+for (p in seq(0, 6, 1) ){
+  for (q in seq(0, 5 ,1) ){
+    for (P in seq(0, 1, 1) ){
+      for (Q in seq(0, 1, 1) ){
+        for (D in seq(0, 1, 1)){
+          m <- arima(log(train_bank), order = c(p,1,q), seasonal = list(order =  c(P,D,Q), period = 12), method = "CSS")
+            m_pred <- forecast(m, h = 60, level=c(95))
+            RMSE <- sqrt(mean(( m_pred[[4]] - valid_bank )^2 ))
+            RMSE_value <- c(RMSE_value, RMSE)
+            p_value <- c(p_value, p)
+            q_value <- c(q_value, q)
+            P_value <- c(P_value, P)
+            Q_value <- c(Q_value, Q)
+            D_value <- c(D_value, D)
+          }
+        }
+      }
+    }
+}
+data.frame(p_value, q_value, P_value, D_value, Q_value, RMSE_value)
+i <- which(RMSE_value == min(RMSE_value))
+cat (p_value[i], q_value[i], P_value[i], D_value[i], Q_value[i])
+
+#Fit optimum value
+m <- arima(train_bank, order = c(3,1,5), seasonal = list(order = c(1,0,1), period = 12), method = "CSS")
+f <- forecast(m, h = 60, level=c(95))
+cat ("RMSE =", sqrt(mean(( f$mean - valid_bank )^2 )), "\n" )
+
+#predicted, lower, upper and fitted values
+prediction <- f$mean
+fitted <- f$fitted
+lower <- ts(f$lower, start = c(2007,1), frequency = 12)
+upper <- ts(f$upper,start = c(2007,1), frequency = 12)
+
+#plot
+plot(bankrupcy_rate, xlim=c(1987,2011), ylim=c(0.01, 0.05), main = "Bankruptcy Rate variation with Month", ylab = "Bankruptcy Rate", xlab = "Month")
+abline(v = 2007, lwd = 1.5, col = "black")
+points(prediction, type = "l", col = "blue")
+points(lower, type = "l", col = "cyan")
+points(upper, type = "l", col = "gray")
+points(fitted, type="l", col = "orange")
+legend("topleft", legend = c("Observed", "Fitted", "Predicted", "95% CI"), lty = 1, col = c("black", "orange", "blue", "gray"), cex = 0.5)
+
+#Residual Plot
+res<- ts(f$residuals, start=c(1984,1), frequency = 12)
+plot(res, main="Residuals vs time")
+
+#T test to check if the mean of residual is zero
+t.test(res)
+
+# Ljung-Box test
+tsdiag(m)
+
+#test for normality
+shapiro.test(res)
+qqnorm(res)
+```
+
