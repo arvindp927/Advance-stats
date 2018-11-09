@@ -1,6 +1,6 @@
 ---
-title: "Problem Set 8"
-author: "Arvind Patel arvindp@mtu.edu"
+
+author: "Arvind Patel"
 date: "November 04, 2018"
 output:
   word_document: default
