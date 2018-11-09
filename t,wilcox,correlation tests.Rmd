@@ -1,0 +1,395 @@
+---
+title: "Problem Set 5"
+author: "Arvind Patel"
+date: '10/14/2018'
+output:
+  word_document: default
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+```{r setup, include=FALSE, echo=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(BayesFactor)
+```
+## Problem 1. Understanding the power of a test.
+
+When we do a NHST test, we look at the p-value--which is the chance that the results could have arisen if the null hypothesis were true.  Let's suppose the null hypothesis is false.  The data come from a normal distribution with sd = 1 and mean +.1, this has a relatively small effect size (.1), but the truth is that the mean is different from 0.
+In this problem, we want to test, via simulation, how likely you are to detect this difference using the three methods discussed in the book for one-sample tests (t-test, binomial test, and bayes factor test). The following code will run a 500 simulated studies with 10 trials per study. It does one study in which the null is true, and a second in which the alternative is true, and looks at the proportion of these that the statistical test determines are different. In this case, we will use p=.05, and bayes factor = 2, as reasonable criterion for calling a difference statistically significant.  A more conservative criterion would use p=.01 and bf=3.
+
+
+For n=10, we can see that about 5% of the cases are found to be significant in the standard t-test.  In this case, it is almost identical to the number that are found to be significant in the null distribution (we'd expect 5% to occur just by chance if there were no difference.).   But the number we find in the binomial test is lower in both cases, and the number of bayes factors > 2 is about the same as well.  Also note that we can test the evidence against the alternative (b>2) and the evidence in support of the null (b<(-2)), and we see that although the Bayes factor test only finds a few cases that are significant, it is otherwise typically in an ambivalent state--it never finds support for the null hypothesis either.  
+
+The probability of finding an effect when it exists is the power of the test.  For a sample size of 10 and an effect size of .1, we have almost no power, with any of the tests. An acceptable power is usually 0.8, and we could gain power by accepting more false alarms (using a less stringent criterion), or by collecting larger numbers of samples, or by obtaining better experimental control and measuring an effect that has a larger effect size.
+
+For this problem, repeat the above simulation for a range of values of n (at least 5 values).   Create a table with a row for each n, and the power for each of the three tests as you change n (i.e., the proportion of true differences the test detected), as well as the false alarm rate for each test.  A power of .8 is considered acceptably large when planning a study.  Identify roughly the n needed for a power of 0.8 in each of the three tests.  Discuss the relative advantages and disadvantages of the three tests with respect to power and false alarm (incorrectly rejecting the null)
+
+```{r}
+
+set.seed(100)
+##this function generates n data points extracts the p/value 
+##bayes factor of the one-sample two-sided test for each:
+simdata1 <- function(n,mean=.1)
+{
+  data <- rnorm(n,mean=mean)
+  
+  c( t.test(data)$p.value,
+    binom.test(sum(data>0),n)$p.value,
+    exp(ttestBF(data)@bayesFactor$bf)) 
+  ##exponentiate because bf is stored as a log and so 0 is unbiased.
+  
+}
+
+runs <- 500
+##this simulates 1000 experiments:
+null <- data.frame(pval=rep(NA,runs),
+                           pvalnp=rep(NA,runs),
+                           bayesf=rep(NA,runs))
+
+##this simulates 1000 experiments:
+simulation <- data.frame(pval=rep(NA,runs),
+                           pvalnp=rep(NA,runs),
+                           bayesf=rep(NA,runs))
+n<-10   ##this is how many samples are drawn in each experiment
+for(i in 1:runs)
+{
+  simulation[i,] <- simdata1(n)
+  null[i,] <- simdata1(n,0)
+}
+
+```
+
+
+```{r}
+## This determines how many of the cases produce a significant result.
+##
+par(mfrow=c(2,3))
+hist(simulation$pval,col="navy",xlab="Standard t-test p value")
+hist(simulation$pvalnp,col="navy",xlab="Binomial test p value")
+hist(log(simulation$bayesf),col="navy", xlab="log(Bayes factor)")
+hist(null$pval,col="navy",xlab="Standard t-test p value")
+hist(null$pvalnp,col="navy",xlab="Binomial test p value")
+hist(log(null$bayesf),col="navy", xlab="log(Bayes factor)")
+```
+
+Examine the number of significant tests when there is a true difference
+```{r}
+mean(simulation$pval <.05)
+mean(simulation$pvalnp < .05)
+mean(simulation$bayesf > 2)
+mean(simulation$bayesf< (-2))
+```
+If the Null Hypothese is false, the mean value if different from 0. From the above, we have 3 tests with mean value different from 0 and are significant 
+
+
+Examine number of significant tests under the null hypothesis:
+```{r}
+mean(null$pval <.05)
+mean(null$pvalnp < .05)
+mean(null$bayesf   >2 )  #evidence for the alternative
+mean(null$bayesf < (-2)) ##evidence for the null?
+```
+If the Null Hypothese is false, the mean value if different from 0. From the above, we have 3 tests with mean value different from 0. That suggests we have 3 tests which reject null null hypothesis and for test with mean 0 we fail to reject null hypothesis. 
+
+
+
+```{r}
+m <-c()
+simdata1(50)
+m <-c(mean(simulation$pval<0.05),m)
+m <-c(mean(simulation$pvalnp<0.05),m)
+m <-c(mean(simulation$bayes>2),m)
+m
+m1 <-c()
+simdata1(500)
+m1 <-c(mean(simulation$pval<0.05),m1)
+m1 <-c(mean(simulation$pvalnp<0.05),m1)
+m1 <-c(mean(simulation$bayes>2),m1)
+m1
+m2 <-c()
+simdata1(5000)
+m2 <-c(mean(simulation$pval<0.05),m2)
+m2 <-c(mean(simulation$pvalnp<0.05),m2)
+m2 <-c(mean(simulation$bayes>2),m2)
+m2
+m3 <-c()
+simdata1(10000)
+m3 <-c(mean(simulation$pval<0.05),m3)
+m3 <-c(mean(simulation$pvalnp<0.05),m3)
+m3 <-c(mean(simulation$bayes>2),m3)
+m3
+m4<-c()
+simdata1(1000)
+m4 <-c(mean(simulation$pval<0.05),m4)
+m4 <-c(mean(simulation$pvalnp<0.05),m4)
+m4 <-c(mean(simulation$bayes>2),m4)
+m4
+```
+## Problem 2: t-tests
+For the data below, compute a one-tailed t-test by hand to determine
+whether the average is reliably greater than 100. That is, compute the
+mean, standard deviation, standard error, t value, and the corresponding
+p value. To compute the t value for this
+comparison, you need to compute the mean and subtract 100, and
+then divide that by the standard error. Verify you did this correctly by
+using the t.test() function to produce the same values. Then, re-run
+your analysis by removing the 245 value, which might seem like it is
+the strongest piece of evidence for your data being greater than 100.
+
+
+```{r}
+data <- c(101,103,99,92,110,105,103,102,104,106,101,
+          101,101,102,103,101,99,104,105,102,102,103,
+          245,103,107,101,103,108,104,101,101,102)
+
+hist(data)
+##one-sample t-test by hand:
+
+mu <- mean(data)
+mu
+sd <- sd(data)
+sd
+se <- sd/sqrt(length(data))
+se
+t <- mu/se
+t
+1-pt(t,32)
+#(1- pt(t,32))*2
+
+
+t.test(data,alternative = "greater")
+
+```
+We see that the data is almost normally distributed with a outlier 245.
+We have performed one sample t test since we have continous data available from single random sample. 
+ H0: the average is equal to 100
+ H1: the average is reliably greater than 100
+ 
+Since, the p value < 0.05 therefore the results are significant and we reject null hypothesis. The value of t is 23.86 which is small and signifies that the data is from the similar groups.
+
+```{r}
+data1 <- c(101,103,99,92,110,105,103,102,104,106,101,
+          101,101,102,103,101,99,104,105,102,102,103,
+          103,107,101,103,108,104,101,101,102)
+hist(data1)
+
+##one-sample t-test by hand:
+
+mu <- mean(data1)
+mu
+sd <- sd(data1)
+sd
+se <- sd/sqrt(length(data1))
+se
+t <- mu/se
+t
+1-pt(t,31)
+#(1- pt(t,32))*2
+
+
+t.test(data1,alternative = "greater")
+
+```
+After removing the 245 value from the dataset, We observe that the data is almost normally distributed and we perform the t test again
+H0: the average is equal to 100
+H1: the average is reliably greater than 100
+ 
+Since, the p value < 0.05 therefore the results are significant and we reject null hypothesis and conclude that the mean of the dataset is greater than 100 even after removal of value 245 
+The t value increases as compared to the previous example. The large t value signify that the data sample comes from different groups.
+
+## Problem 3. Wilcox test
+
+Generate a set of 20 random normal numbers, and compare them to
+their sorted values with both an independent samples wilcox test, and a
+paired wilcox test. What value do you get for W for the independent
+test? Why do the p values differ?
+```{r}
+x <- rnorm(20)
+y <- sort(x)
+wilcox.test(x,y,exact=F)
+wilcox.test(x,y, paired = TRUE,exact=F)
+```
+
+Wilcox test: It compares two samples by rank test 
+Assumption - Samples are independent and randomly drawn
+H0: x and y are identical populations
+H1: x and y are non identical populations
+
+Since, we have p-value of 1 and 0.888 in sum test and signed rank test, we fail to reject null hypothesis and we can conclude that the two samples x and y are identical population.
+
+
+##Problem 4. Comparing t-test, wilcox, and Bayes factor t-test
+
+Generate a set of 150 normal random numbers whose means differ by
+.3 standard deviation units from another set, but that are uncorrelated
+to the first set, as in the example below. Run one-sided tests compariing these, including standard t-test, a wilcox test, and a BayesFactor t-test. Do the results differ for the different tests? Repeat several times
+to determine whether there is a pattern.  
+```{r}
+#Repeated 5 times
+library(BayesFactor)
+x <- rnorm(150)
+y <- rnorm(150) + .3
+t.test(x,y,alternative = "greater")
+wilcox.test(x,y,alternative="greater",exact = F)
+ttestBF(x,y,alternative="greater")
+```
+The null and alternate hypothesis are given as below -
+H0: x and y are identical populations
+H1: x and y are non identical populations
+
+After repeating the test for five times, we observe the following - 
+Welch two sample test -
+
+The t value varies from -1.543 to -2.77 and p value from 0.93 to 0.99
+Mean value of y increases after every repetation
+In all the five repetitions, the p value is not less than 0.05, hence the results are not significant and we reject the null hypothesis. Also the t value are always less than 2.
+
+Wilcox test-
+
+W value varies from 9025 to 10004 with varation in p value from 0.95 to 0.99
+In all the repetations, the p value is not less than 0.05, hence the results are not significant and we reject null hypothesis.
+
+Bayes factor analysis-
+
+The results for Bayes factor analysis, varies from Anecdotal evidence for H0 to Moderate evidence for H1
+
+
+
+
+## Problem 5. Robustness to transforms
+For each of the data sets you created in the previous problem, exponen-
+tiate your samples using the exp function (e.g., exp(x) and exp(y)),
+and plot the distributions using hist. Then do the same three tests you did originally (t-test, wilcox test, and bayes factor test) on these
+two exponentiated data sets. How do this test compare to the previous
+test? Discuss why you see the differences and similarities with Problem 4.
+
+```{r}
+x1 <- rnorm(150)
+y1 <- rnorm(150) + .3
+x <- exp(x1)
+y <- exp(y1)
+hist(x)
+hist(y)
+t.test(x,y,alternative = "greater")
+wilcox.test(x,y,alternative="greater",exact = F)
+ttestBF(x,y,alternative="greater")
+```
+The null and alternate hypothesis are given as below -
+H0: x and y are identical populations
+H1: x and y are non identical populations
+
+After taking exponent of x and y, 
+Welch Two Sample t-test -
+we observe that the mean values of x and y increases. The 95% CI value decreases after exponenting x and y.
+We observe that, the p value is not less than 0.05, hence the results are not significant and we reject the null hypothesis which is similar to previous results.
+
+Wilcoxon rank sum test-
+There is no difference in the results as compared to previous cases. It has a similarity that we observe p value which are not less than 0.05 and hence we reject the null hypothesis.
+
+Bayes factor analysis -
+It is similar to the cases without exponent values, after we take exponent of x and y we observe that it has Anecdotal evidence for H0
+
+
+## Problem 6. Comparison to paired tests.
+For the original data (not the exponentiated data), run a paired t-test, as well as a paired wilcox test,
+and a paired BayesFactor test (even though the data were not paired).
+
+Discuss what the findings were and how they compare to the  unpaired versions of the tests.  
+
+```{r}
+x <- rnorm(150)
+y <- rnorm(150) + .3
+t.test(x,y,alternative = "greater", paired = TRUE)
+wilcox.test(x,y,alternative="greater",exact = F, paired = TRUE)
+ttestBF(x,y,alternative="greater", paired = TRUE)
+```
+The null and alternate hypothesis are given as below -
+H0: the difference between x and y has the mean value of zero.
+H1: the difference between x and y has the mean value other than zero.
+
+For paired t-test,
+The p-value>0.05 hence we reject the null hypothesis and we can conclude that the difference between two groups x and y have mean value which is not zero and the mean of the difference is -0.3768
+
+Wilcox test-
+The p -value>0.05, hence we can say that x and y comes from non identical populations
+
+Bayes factor analysis-
+We get moderate evidence for H1 according to bayes factor analysis
+
+
+## Problem 7: Correlations
+
+Suppose you have a true correlation of .3 between two variables, created
+by mixing one uniform with a second like this:
+
+```{r}
+x <- runif(100)
+y <- runif(100)
+
+z <- x + .5*y
+z1 <- z
+z2 <- z+10
+z3 <- log(z)
+z4 <- z*10
+z5 <- z + runif(100)
+```
+Compute pearson and spearman correlations between x and each of the z variables z1 through z5.
+Identify the statistical significance of the correlations, and report a Bayes factor for each correlation as well.  Examine the pearson and spearman correlations, and discuss why for some transforms, these are unchanged, but for other transforms they are changed.
+```{r}
+cor.test(x,z1, method = "pearson")
+cor.test(x,z2, method = "pearson")
+cor.test(x,z3, method = "pearson")
+cor.test(x,z4, method = "pearson")
+cor.test(x,z5, method = "pearson")
+
+cor.test(x,z1, method = "spearman")
+cor.test(x,z2, method = "spearman")
+cor.test(x,z3, method = "spearman")
+cor.test(x,z4, method = "spearman")
+cor.test(x,z5, method = "spearman")
+
+
+#Bayes factor for correlation
+correlationBF(x,z1)
+correlationBF(x,z2)
+correlationBF(x,z3)
+correlationBF(x,z4)
+correlationBF(x,z5)
+
+par(mfrow=c(1,2))
+test <- cor.test(x,z1,method = "pearson")
+
+plot(x,z1, main= paste("Pearson correlation =",round(test$estimate,3)), sub = paste("P-value",test$p.value))
+test <- cor.test(x,z1,method = "spearman")
+plot(x,z1, main= paste("Spearman correlation =",round(test$estimate,3)), sub = paste("P-value",test$p.value))
+
+par(mfrow=c(1,2))
+test <- cor.test(x,z2,method = "pearson")
+plot(x,z2, main= paste("Pearson correlation =",round(test$estimate,3)), sub = paste("P-value",test$p.value))
+test <- cor.test(x,z2,method = "spearman")
+plot(x,z2, main= paste("Spearman correlation =",round(test$estimate,3)), sub = paste("P-value",test$p.value))
+
+par(mfrow=c(1,2))
+test <- cor.test(x,z3,method = "pearson")
+plot(x,z3, main= paste("Pearson correlation =",round(test$estimate,3)), sub = paste("P-value",test$p.value))
+test <- cor.test(x,z3,method = "spearman")
+plot(x,z3, main= paste("Spearman correlation =",round(test$estimate,3)), sub = paste("P-value",test$p.value))
+
+par(mfrow=c(1,2))
+test <- cor.test(x,z4,method = "pearson")
+plot(x,z4, main= paste("Pearson correlation =",round(test$estimate,3)), sub = paste("P-value",test$p.value))
+test <- cor.test(x,z4,method = "spearman")
+plot(x,z4, main= paste("Spearman correlation =",round(test$estimate,3)), sub = paste("P-value",test$p.value))
+
+par(mfrow=c(1,2))
+test <- cor.test(x,z5,method = "pearson")
+plot(x,z5, main= paste("Pearson correlation =",round(test$estimate,3)), sub = paste("P-value",test$p.value))
+test <- cor.test(x,z5,method = "spearman")
+plot(x,z5, main= paste("Spearman correlation =",round(test$estimate,3)), sub = paste("P-value",test$p.value))
+
+```
+From the correlations plots and values above, we observe that z1,z2,z3,z4 all follow some linear or log transform with some bias added to it hence they all have pearson and spearman correlation above 0.90.
+Whereas for x and z5 we observe that the correlation value is 0.701 which is less as compared to other transforms. It is because z5 follows a random distribution and not really any linear pattern/transform.
+
+Pearson and spearman correlation coeffecients are almost similar for all the transforms except for correlation between x and z3, where there is about 3-4% difference between the two correlations.

@@ -1,0 +1,191 @@
+---
+title: "Problem Set 4"
+author: "Arvind Patel"
+date: "09/30/2018"
+output:
+  word_document: default
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+#1.  Custom population pyramids
+
+The US census keeps demographic data estimates for every country in the world by year at:
+https://www.census.gov/data-tools/demo/idb/informationGateway.php
+
+In the database, it will let you select a country (or countries), a year, and various outputs including summaries and pyramid plots. If you choose under 'select report' "Population by five year age groups",  or "Population by year age groups" it will give you a table with the population pyramid. For this problem, you will need to create and save three data sets from this website, either comparing  countries, years, or something similar.  When you download a country, be sure to remove the 'total' row so that you don't double-count in your demographics. In this problem, you will download two pyramid data sets from this website and make pyramid plots from them.  Here is a sample of what the first few rows of the data for Angola show:
+
+```
+  2011   0-4 4,619,028 2,306,925 2,312,103 19.7 20.2 19.2 99.8
+  2011   5-9 3,662,105 1,811,221 1,850,884 15.6 15.8 15.3 97.9
+  2011 10-14 2,856,181 1,412,064 1,444,117 12.2 12.3 12.0 97.8
+  2011 15-19 2,370,695 1,158,706 1,211,989 10.1 10.1 10.0 95.6
+  2011 20-24 2,025,188   978,216 1,046,972  8.6  8.6  8.7 93.4
+  2011 25-29 1,710,352   824,681   885,671  7.3  7.2  7.3 93.1
+...
+```
+
+
+Here, the raw counts are in columns 3 and 4. These cannot be used because they have commas in them, and even then pyramid.plot wants percent values (out of 100) by default (giving it numbers in the millions causes trouble as it wants to use percentages on the horizontal axis). So use columns 7 and 8 to plot the pyramids.
+
+A simple (and ugly) pyramid can be made like this:
+```
+library(plotrix)
+p1 <- read.table("pyr1.txt")
+pyramid.plot(p1$V7,p1$V8)
+
+```
+
+
+
+
+
+```{r}
+#import libraries
+library(plotrix)
+library(XLConnect)
+library('RColorBrewer')
+#set the paletter for the choosing the color
+#palette(seacolors)
+#set the color for male population
+col1 = colorRampPalette(c( "green", "cyan"), space = c("rgb", "Lab"),bias = 2, alpha = FALSE)(21)
+#set the color for female population
+col2 = colorRampPalette(c( "orange", "red"), space = c("rgb", "Lab"),bias = 2, alpha = FALSE)(21)
+#load the data for 2018, 1985,2050 into three different dataframes
+census_data_2018 <- readWorksheetFromFile('census_data_IN.xlsx', sheet = 1)
+census_data_1985 <- readWorksheetFromFile('census_data_IN.xlsx', sheet = 2)
+census_data_2050 <- readWorksheetFromFile('census_data_IN.xlsx', sheet = 3)
+
+#pyramid plot for 2018
+pyramid.plot(census_data_2018$Percent.Male, census_data_2018$Percent.Female,
+             main = 'Comparision of Male and Female Population for the year 2018',
+             lxcol = col1,
+              rxcol = col2,
+             labels = census_data_2018$Age,
+             gap = 1.0,
+             laxlab = c(0,1,2,3,4,5,6,7,8,9),
+             raxlab = c(0,1,2,3,4,5,6,7,8,9),
+             labelcex = 0.7,
+             xlim = c(10,10)
+             )
+box(which = "plot", lty = "solid")
+
+#pyramid plot for 1985
+pyramid.plot(census_data_1985$Percent.Male, census_data_1985$Percent.Female,
+             main = 'Comparision of Male and Female Population for the year 1985',
+             lxcol = col1,
+              rxcol = col2,
+             labels = census_data_2018$Age,
+             gap = 1.0,
+             laxlab = c(0,1,2,3,4,5,6,7,8,9),
+             raxlab = c(0,1,2,3,4,5,6,7,8,9),
+             labelcex = 0.7,
+             xlim = c(10,10)
+             )
+box(which = "plot", lty = "solid")
+
+#pyramid plot for 2050
+pyramid.plot(census_data_2050$Percent.Male, census_data_2050$Percent.Female,
+             main = 'Comparision of Male and Female Population for the year 2050',
+             lxcol = col1,
+              rxcol = col2,
+             labels = census_data_2018$Age,
+             gap = 1.0,
+             laxlab = c(0,1,2,3,4,5,6,7,8,9,10,11,12,13),
+             raxlab = c(0,1,2,3,4,5,6,7,8,9,10,11,12,13),
+             labelcex = 0.7
+             )
+box(which = "plot", lty = "solid")
+
+```
+
+
+
+I have choosen dataset for country -India at three different time i.e, 1992,2018 and 2050
+There is a wide difference in the overall population of the India over all these three years and it would be interesting to observe the pattern between all these years. All the difference in the population may give different pattern in the age group of the population. I wish to understand variation in each age group over the years in the population of India.
+
+The changes in India's demographic is highly dependent on age structure. The population pyramid of the share of the Indian Population with male and female seperately for each age group is shown the plots above. In 1985, India had almost equal number of male and female population uptill the age group of 50-54 and then the popoulation starts decreasing gradually for the age groups of 54+ years.
+
+In 2018, India's age distribution is of the shape of a pyramid which suggests that it has highest number of very young and working class population. which is quite different as compared to that of the 1985 plot wherein the young population was equal to the working age and mid age population but due to rapid increase in the population India has seen a rapid growth in the population of Male and female equivalently.
+
+In 2050, we oberve a perfect pyramid structure for the population of India. The population gradually decreases with the age group which is different from that of the population in 2018 and 1985 wherein we didnt see a stepwise gradual change according to the age group.
+
+
+
+
+
+
+
+For this problem:
+
+* Download at least three pyramid data sets whose comparison is interesting. This could either be different countries in the same time, or different times in the same country.  Be sure that the pyramids differ substantially in at least two you select. Describe in words why you chose the three sets, and what you hope to learn by looking at them.
+* Identify a color palette or color scheme from one of the libraries or functions we discussed in class (colorRamp, RColorBrewer, gplots, etc).  Use a common color palette on each pyramid graph.  You may use different colors for men and women.
+* Make the graphic that appears in your solution as professional as possible. There should be no strange axis labels. It should be a readable size, with appropriate titles.
+* Set the following arguments:
+ - lx, rx, rxcol,lxcol,labels,gap, space,show.values,labelcex,xlim, and main, and laxlabel/raxlabel if needed
+ - Note that xlim takes two positive values, like c(25,25) .
+
+Make separate  pyramid plots for each of the three related data sets. Discuss what differs between the data sets, and what it means about either the history or future of the countries or time eras within a country.
+
+Warning: pyramid.plot can be fussy about its settings.  There are reasonable settings for margins,labels, and data values that will cause it to fail or hang.  To deal with this, be sure to make only one change at a time when you are making your figure, so you can easily identify if something went wrong.
+
+
+#2. Demonstration of a new Graphics Function or Package
+
+For the demonstration project, you and up to two partners will select a graphical library, framework, or function we have not discussed in class.  You will create a 5-minute demonstration of how the system works on data. Do not use an example directly from the help file or from a blog. You must create your own demonstration. In the problem set, turn in a step-by-step guide for using the package or function to create a data visualization.  Again, this cannot be directly from the help manual or some already-existing source. You and your team may submit identical answers to this question only.
+```{r}
+#read csv data file
+data<- read.csv("Residential_Electricity_Prices.csv", header = F,skip=1)
+#specify column names for the data
+colnames(data)=c("Year","Consumer Price Index","Nominal Price","Real Price")
+#view first 6 rows of data
+head(data)
+```
+```{r}
+library(plotrix)
+#?radial.plot
+#specify font size for labels and inside the plot
+par(cex.axis=0.75, cex.lab=0.75)
+#anti-clockwise axis
+radial.plot(data$`Real Price`,labels=data$Year,lwd=1.75, clockwise = FALSE,start = 1, grid.unit = c("$"), main = "Residential Electricity Prices")
+
+```
+```{r}
+#specify font size for labels and inside the plot
+par(cex.axis=0.75, cex.lab=0.75)
+#clockwise labels
+radial.plot(data$`Real Price`,labels=data$Year,lwd=1.5, start = 1.5,clockwise = TRUE, grid.unit = c("$"),main = "Residential Electricity Prices", radlab = TRUE)
+# radlab=TRUE, changes orientation of the labels
+# plot with radial lines, which is the default rp.type
+```
+
+```{r}
+#specify font size for labels and inside the plot
+par(cex.axis=0.75, cex.lab=0.75)
+# type=polygon
+radial.plot(na.omit(data$`Real Price`),rp.type="p",lwd =2,line.col="blue", labels=data$Year, clockwise = TRUE, grid.unit = c("$"),main = "Residential Electricity Prices", radlab = TRUE)
+```
+
+```{r}
+#specify font size for labels and inside the plot
+par(cex.axis=0.75, cex.lab=0.75)
+# type=polygon, poly.col fills the polygon with specified color
+radial.plot(na.omit(data$`Real Price`),rp.type="p",poly.col="yellow",lwd =2,line.col="blue", labels=data$Year, clockwise = TRUE, grid.unit = c("$"),main = "Residential Electricity Prices", radlab = TRUE)
+
+```
+
+```{r}
+#specify font size for labels and inside the plot
+par(cex.axis=0.75, cex.lab=0.75)
+# plotting with dots, type='s', grid.bg=grid background color
+radial.plot(na.omit(data$`Real Price`),rp.type="s",point.symbols=20,point.col="red", labels=data$Year, clockwise = TRUE, grid.unit = c("$"),main = "Residential Electricity Prices",grid.bg= "grey93", radlab = TRUE)
+
+```
+```{r}
+#specify font size for labels and inside the plot
+par(cex.axis=0.75, cex.lab=0.75)
+# radial plot type line
+radial.plot(na.omit(data$`Real Price`),rp.type="l",lwd=2,line.col="black", labels=data$Year, clockwise = TRUE, grid.unit = c("$"), radlab = TRUE, mar = c(4, 4, 2, 2))
+title("Residential Electricity Prices", line = 1.2)
+```

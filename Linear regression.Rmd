@@ -1,0 +1,228 @@
+---
+title: "Problem Set 7 Solution"
+author: "Arvind Patel arvindp@mtu.edu"
+date: "October 28, 2018"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+For each of the following questions, provide R commands used to solve the problem.
+
+# Linear Regression and Variable Selection
+
+Suppose you are a biologist interested in developing metrics to determine the gender of fossilized kangaroo
+specimen based on skull measurements. Load the kanga data set from the faraway package. A number of the elements have missing data, and so select out the subset that have all observed measures:
+
+```{r}
+
+library(faraway)
+data(kanga)
+kanga
+kanga2 <- kanga[!is.na(rowSums(kanga[,3:20])),]
+```
+
+
+#1. Predicting a categorical variable
+
+Transform sex to a numeric variable, and predict the outcome Sex based on all of the other predictors, other than species. Make a plot examining how good the fit is. 
+To predict Sex, a categorical value, you must transform it into a number. Doing
+as.numeric(kanga2$sex) will code Female=1 and Male=2. You are attempting to predict an integer-
+coded categorical value based on a sum of linear predictors, and your outcome is not an integer.
+So, use whether the outcome prediction value is greater than or less than 1.5 to decide whether the
+specimen is male or female (you can use round()).  Create a table showing the accuracy and error rate for the sex and the model's guess at sex. 
+Discuss the problems you think might occur when trying to predict a categorical value with a continuous linear model, and how accurate you end up being with this model.
+
+```{r}
+
+
+kanga2$sex <- as.numeric(kanga2$sex)
+
+#Linear model for predicting sex
+lm1 <- lm(formula = sex ~ ., data= kanga2)
+lm1$fitted.values<-round(lm1$fitted.values,2)
+
+# Plot for the model
+plot(lm1$fit~kanga2$sex,ylab="Gender coefficient", xlab = "actual sex values")
+points(as.numeric(kanga2$sex),lm1$fit)
+abline(1.5,0,lwd=3)
+
+#Round of the gender variable and create the table
+predictedgender <- lm1$fit > 1.5
+table(kanga2$sex,c("F","M")[(predictedgender+1)])
+
+# summary statistics of lm1
+summary(lm1)
+#fitted(lm1)
+df1 <- as.data.frame(lm1$fitted.values)
+df2 <- as.data.frame(kanga2$sex)
+```
+
+We find that the model predicts Female correctly 53 times and Males 32 times
+
+The Plot above shows the actual sex values and the predicted values which are not rounded.We find line at 1.5 which is used for predicting the rounded values of sex.
+
+The linear model created is for predicting sex with all other variables as predictors. We get residuals values with median -0.06317 which is small enough. The coeffecients obtained from the linear model have an intercept with -2.15644 and have P value of 0.049 <0.05 and hence the results are significant.We find occipitionasal.length and nasal.length have significant results with high t values.
+
+The Multiple R squared value is 0.436 and adjusted R squared value of 0.2949, hence 43.6% of information can be predicted by all the variables
+
+
+F statistic of 3.092 with p value of 0.0001809 has a signficant results suggesting no variance in both the results
+
+#2. Selecting variables
+
+Use t-values or an Anova/F test to select a reduced set of predictors. You can use either t-values, or F-values if you compare models using anova or drop1(model,test="F"), as these produce the same results. Discuss howw few predictors can you use without impacting the goodness of fit appreciably? Then, use an AIC criterion to select the best model.  Finally, use a BayesFactor regression. When appropriate, you can use the step function to automatically find the best model.
+
+Identify the smallest, most predictive model using each method.  Describe the resulting models, discuss whether they differ, and how good the final model is at predicting (again, show a table examining actual by predicted sex for each model). 
+
+```{r}
+boxplot(kanga2[,2:20],col="gold",las=3)
+round(cor(kanga2[,2:20]),3)
+#lm1 with all the predictors
+lm1 <- lm(kanga2$sex ~ kanga2$basilar.length + kanga2$occipitonasal.length + kanga2$palate.length+kanga2$palate.width + kanga2$nasal.length +kanga2$nasal.width +kanga2$squamosal.depth + kanga2$lacrymal.width +kanga2$zygomatic.width + kanga2$orbital.width + kanga2$occipital.depth + kanga2$crest.width + kanga2$foramina.length + kanga2$mandible.length + kanga2$mandible.width + kanga2$mandible.depth + kanga2$ramus.height + kanga2$.rostral.width)
+summary(lm1)
+drop1(lm1,test="F")
+
+#Dropping kanga2$basilar.length and kanga2$palate.width
+lm2 <- lm(kanga2$sex ~ kanga2$occipitonasal.length + kanga2$palate.length + kanga2$nasal.length +kanga2$nasal.width +kanga2$squamosal.depth + kanga2$lacrymal.width +kanga2$zygomatic.width + kanga2$orbital.width + kanga2$occipital.depth + kanga2$crest.width + kanga2$foramina.length + kanga2$mandible.length + kanga2$mandible.width + kanga2$mandible.depth + kanga2$ramus.height + kanga2$.rostral.width)
+summary(lm2)
+drop1(lm2,test="F")
+
+
+#Dropping kanga2$squamosal.depth
+lm3 <- lm(kanga2$sex ~ kanga2$occipitonasal.length + kanga2$palate.length + kanga2$nasal.length +kanga2$nasal.width + kanga2$lacrymal.width +kanga2$zygomatic.width + kanga2$orbital.width + kanga2$occipital.depth + kanga2$crest.width + kanga2$foramina.length + kanga2$mandible.length + kanga2$mandible.width + kanga2$mandible.depth + kanga2$ramus.height + kanga2$.rostral.width)
+summary(lm3)
+drop1(lm3,test="F")
+
+#Dropping kanga2$mandible.depth 
+lm4 <- lm(kanga2$sex ~ kanga2$occipitonasal.length + kanga2$palate.length + kanga2$nasal.length +kanga2$nasal.width + kanga2$lacrymal.width +kanga2$zygomatic.width + kanga2$orbital.width + kanga2$occipital.depth + kanga2$crest.width + kanga2$foramina.length + kanga2$mandible.length + kanga2$mandible.width + kanga2$ramus.height + kanga2$.rostral.width)
+summary(lm4)
+drop1(lm4,test="F")
+
+#Dropping kanga2$foramina.length, kanga2$occipital.depth, kanga2$palate.length, kanga2$mandible.length, kanga2$zygomatic.width and kanga2$.rostral.width
+lm5 <- lm(kanga2$sex ~ kanga2$occipitonasal.length + kanga2$nasal.length +kanga2$nasal.width + kanga2$lacrymal.width + kanga2$orbital.width + kanga2$crest.width + kanga2$mandible.width + kanga2$ramus.height)
+summary(lm5)
+drop1(lm5,test="F")
+
+
+#Drop kanga2$orbital.width, kanga2$crest.width , kanga2$mandible.width ,kanga2$ramus.height
+lm6 <- lm(kanga2$sex ~ kanga2$occipitonasal.length + kanga2$nasal.length + kanga2$nasal.width +kanga2$lacrymal.width )
+summary(lm6)
+drop1(lm6,test="F")
+
+#anova test to check difference between the results of lm1 and lm6
+anova(lm1,lm6)
+
+
+
+#AIC for model comparision and selection
+data.frame(model=paste("lm",1:6,sep=""),
+           rbind(extractAIC(lm1),
+                 extractAIC(lm2),
+                 extractAIC(lm3),
+                 extractAIC(lm4),
+                 extractAIC(lm5),
+                 extractAIC(lm6)))
+
+##Use stepwise model search.  Here, we use both directions every time.
+
+gsmall <- step(lm1,direction="both", k=log(nrow(kanga2)))
+summary(gsmall)
+
+#Bayes Factor
+library(BayesFactor)
+bmodel <- regressionBF(formula =sex ~ occipitonasal.length + nasal.length + nasal.width + lacrymal.width, data = kanga2)
+plot(head(bmodel))   
+head(bmodel)
+```
+Summary of all the variables and the Box Plot -
+By looking at the summary chart we find that occuipitionasal.length has highest mean and foramina.length has the lowest mean of all the variables.We can make a rough assumption that occuipitionasal.length is more important than other variables.Similar observations can be made using the Box plot
+
+Correlation matrix - 
+Correlation matrix is used for finding the relationship between all the variables.If we find out two predictors that are highly correlated, we can remove one of them as it carries redundant information and is not useful in prediction process. We find lacrymal.width and basilar.length have correlation of about 90%, lacrymal.width and palate.length have correlation of about 90%, zygomatic.width and ramus.height are 93.6% correlated.
+
+I have created different linear models lm1,lm2,lm3,lm4,lm5,lm6 by removing different predictors each time and compared the statistical significance tests to find the best model which is simpler yet does a good job in predicting
+lm1 is the model which has all other predictors. RSS value is 14.28 and AIC is -163.52. we find that most of the variables in the model have low statistcal signifcance.So, we'll remove basilar.length and palate.width which have high p values and low F and t values.
+
+lm2 is the model obtained after removing basilar.length and palate.width. We oberve that R squared value doesnot change much and F statistics has significant results
+
+lm3 is the model obtained after removing squamosal.depth and lm4 is the model obtained after removing mandible.depth. We oberve that R squared value doesnot change much and F statistics has significant results
+
+lm5 is the model obtained after removing foramina.length, occipital.depth, palate.length,mandible.length,zygomatic.width and rostral.width. It has RSS value of 14.946 and AIC of -174.98. We oberve that R squared value (0.3981) doesnot change much and F statistics(7.606) has significant results with p-value: 9.252e-08 <0.05
+
+lm6 is the model obtained after orbital.width, crest.width , mandible.width ,ramus.height. We find that all the predictors have p value <0.05 with high F value. RSS is 16.89 and AIC is -170. It has R squared value  of 0.3195 which is still high as we have reduced predictors from 20 to 4. F statistic of about 11 which have significant results as p value is <0.05. 
+
+Using AIC, we can compare all the six model for best AIC value with simpler model. We find lm6 has AIC value of -170 and 4(occipitonasal.length, nasal.length, nasal.width,lacrymal.width) predictors
+Hence,lm6 is the best model
+
+We have used gsmall to find out the best model and we find gsmall to produces same predictors (occipitonasal.length, nasal.length, nasal.width,lacrymal.width) with
+Multiple R-squared:  0.3195,	Adjusted R-squared:  0.2911 
+F-statistic: 11.27 on 4 and 96 DF,  p-value: 1.547e-07. Hence the results are significant.
+
+Using Bayes Factor Regression too, we find that the best model has  occipitonasal.length, nasal.length, nasal.width, lacrymal.width with largest bayes factor value of 99427
+
+#3. Predicting missing data 
+
+First, Build a model predicting palate.width based on as many of the remaining variables you think are reasonable. Try to find the simplest model that predicts the variable well. Examine how well you predict palate.width in the data set, and examine and interpret the R^2 and multiple R^2 values to justify your model. REMEMBER--YOU ARE NOT PREDICTING SEX IN THIS MODEL.  Show a plot  and discuss whether the prediction seems good.  
+```{r}
+
+lmwidth <- lm(palate.width ~., data = kanga2)
+
+##Use stepwise model search.  Here, we use both directions every time.
+
+gsmall <- step(lmwidth,direction="both", k=log(nrow(dat)))
+summary(gsmall)
+#basilar.length, nasal.width, zygomatic.width, crest.width, mandible.length are the best predictors selected using gsmall
+plot(kanga2$palate.width,gsmall$fit,pch=16,col="gold",main="Observed vs. Predicted palate.width",ylab="Predicted palate.width", xlab = "observed palate.width")
+points(kanga2$palate.width,gsmall$fit)
+```
+Using gsmall, we find the best model for predicting palate.width. The best predictors are basilar.length, nasal.width, zygomatic.width, crest.width, mandible.length. We find p value are significant for all the predictors, with significant F statistic of 60.34 and R squared value of 0.7605 which is high.
+
+The plot for observed and predicted palate.width is shown which is pretty linear. We find almost linear relation between the observed and predicted values from the best model
+
+
+
+Once you have a good model, consider that there were 24 missing palate.width values in the original data.  Select the data with missing values along that dimension:
+```{r}
+missing <- kanga[is.na(kanga$palate.width),]
+missing
+#nasal.width, crest.width are the predictors which have no NAs in the best model selected, so we select these 2 columns for prediction
+```
+
+For any model, you can use the predict function to produce the model’s best estimates for a given
+observed data set, even if it was not part of the original model (as with the missing data).
+
+```
+newpred <- round(predict(lm.palate,missing))
+```
+Note that other variables are also sometimes missing in the set, so you should try to create a model that does not use the variables with missing values. Now, put these predicted values back into your kanga data set, like this:
+
+```{r}
+lm.palate <- lm(palate.width ~ nasal.width+crest.width, data = kanga2)
+newpred <- round(predict(lm.palate,missing))
+kanga$palate.width[is.na(kanga$palate.width)] <- newpred
+```
+We have imputed the missing values in palate.width using the above method
+
+```
+kanga$palate.width[is.na(kanga$palate.width)] <- newpred
+```
+This is called imputing data. Finally, if your best model from  the previous questions did not contain palate.width as a predictor, add it to that model. Otherwise use your best model that already contains palate.width as a predictor. With this model, predict sex of the missing cases.  Make a table showing how well the model is at predicting the sex of the kangaroos.
+
+
+```{r}
+lm_afterImputation <- lm(as.numeric(kanga2$sex) ~ kanga2$occipitonasal.length + kanga2$nasal.length +kanga2$nasal.width + kanga2$lacrymal.width +kanga2$palate.width)
+summary(lm_afterImputation)
+
+predictedgender <- lm_afterImputation$fit > 1.5
+table(kanga2$sex,c("F","M")[(predictedgender+1)])
+
+```
+We find the linear model after the imputation and adding palate.width to the best model. We find the intercept value of -1.84 with p value of 0.0019 <0.05. All the predictors are significant except the palate.width. We find R squared value increases to 0.3206. It has a high F value of 8.96 with p value <0.05, hence it has significant results.
+We find that it predicts Female correctly 51 times and Males 29 times
