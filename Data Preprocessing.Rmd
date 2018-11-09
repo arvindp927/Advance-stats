@@ -1,0 +1,147 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+problem set 3.1 (a)
+```{r}
+library(mlbench)
+library(e1071)
+data(Glass)
+str(Glass)
+```
+
+
+```{r fig.width= 10, fig.height=8}
+attach(Glass)
+par(mfrow=c(3,3))
+hist(RI, main= "Histogram of RI")
+hist(Na, main= "Histogram of Na")
+hist(Mg, main= "Histogram of Mg")
+hist(Al, main= "Histogram of Al")
+hist(Si, main= "Histogram of Si")
+hist(K, main= "Histogram of K")
+hist(Ca, main= "Histogram of Ca")
+hist(Ba, main= "Histogram of Ba")
+hist(Fe, main= "Histogram of Fe")
+
+```
+```{r}
+# Relationship between the predictors
+library(corrplot)
+corr_matrix<- cor(Glass[,-10])
+corrplot(corr_matrix, order= "hclust", type = 'upper')
+```
+3.1(b)
+```{r fig.height= 8, fig.width= 10}
+attach(Glass)
+par(mfrow=c(3,3))
+boxplot(RI, main= "Boxplot of RI")
+boxplot(Na, main= "Boxplot of Na")
+boxplot(Mg, main= "Boxplot of Mg")
+boxplot(Al, main= "Boxplot of Al")
+boxplot(Si, main= "Boxplot of Si")
+boxplot(K, main= "Boxplot of K")
+boxplot(Ca, main= "Boxplot of Ca")
+boxplot(Ba, main= "Boxplot of Ba")
+boxplot(Fe, main= "Boxplot of Fe")
+```
+3.1(c)
+```{r}
+#apply box  plot transformation and check if there is any improvement in the skweness 
+library(caret)
+preprocessed_data<- preProcess(Glass[,-10],method=c("BoxCox"))
+transformed_data<- predict(preprocessed_data,Glass[-10])
+par(mfrow=c(3,3))
+for (i in 1:9)
+{
+hist(transformed_data[,i],xlab=colnames(transformed_data)[i], main = paste('Hist for',colnames(transformed_data)[i],'after Box cox'))
+}
+
+apply(transformed_data,2,skewness)
+```
+
+```{r}
+attach(Glass)
+library(e1071)
+skewed_values <- apply(Glass[,-10],2,skewness)
+skewed_values
+```
+
+Problem 3.2
+3.2(a)
+```{r}
+library(mlbench)
+data(Soybean)
+str(Soybean)
+
+#frequency distribution
+par(mfrow=c(6,6))
+for (i in 1: ncol(Soybean)){
+  plot(Soybean[,i],xlab=colnames(Soybean)[i])
+}
+
+```
+3.2(b)
+```{r}
+image(is.na(Soybean), main ="Missing values", xlab = "observartion", ylab = "Variable", xaxt = "n", yaxt= "n", bty="n")
+axis(1, seq(0,1,length.out = nrow(Soybean)), 1:nrow(Soybean), col = "white")
+```
+
+```{r}
+
+Ras <- NULL
+for(i in 1:ncol(Soybean)){
+  NAs <- sum(is.na(Soybean[,i]))
+  NAs <- as.data.frame(NAs)
+  NAs$var<-colnames(Soybean)[i]
+  Ras <- rbind(Ras, NAs)
+}
+Ras_ <- as.data.frame(Ras)
+Ras1 <- Ras_[order(-Ras_$NAs),]
+barplot(Ras1$NAs, names.arg = colnames(Soybean), horiz = TRUE, xlab = 'Number of NAs', main = 'Barplot for number of NAs', cex.axis = 0.55, cex.names = 0.55, las=2, width = 5)
+
+```
+
+```{r}
+number_of_nas <- apply(Soybean, 2, function(sum_na){ sum(is.na(sum_na)) } )
+number_of_nas
+
+Soybean$has_nans_in_sample = apply( Soybean[,-1], 1, function(x){ sum(is.na(x)) > 0 } )
+table( Soybean[, c(1,34) ] )
+```
+
+```{r}
+##Near Zero Variance
+nearZeroVar(Soybean)
+library(VIM)
+transformed_soybean <- kNN(Soybean)
+transformed_soybean
+```
+
+Problem 3.3
+3.3(a)
+```{r}
+library(caret)
+data(BloodBrain)
+logBBB
+bbbDescr
+```
+
+3.3(c)
+```{r}
+library(corrplot)
+corr_matrix<- cor(bbbDescr)
+corrplot(corr_matrix, order= "hclust", method = 'color', tl.pos = "n")
+
+```
+
+```{r}
+corr_cuttoff = findCorrelation( cor( bbbDescr ), cutoff=0.75 )
+
+bbbDescr_lesscorr = bbbDescr[,-corr_cuttoff]
+bbbDescr_lesscorr
+
+corrplot( cor(bbbDescr_lesscorr), order = 'hclust', method = 'color', tl.pos="n" )
+
+```
+

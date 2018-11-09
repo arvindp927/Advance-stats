@@ -1,0 +1,97 @@
+
+```{r}
+library(ggplot2)
+library(caret)
+library(AppliedPredictiveModeling)
+#read the music genre data
+genre_data <-read.csv('genresTrain.csv')
+#check the dimensions
+dim(genre_data)
+str(genre_data)
+#frequency distribution
+ggplot(genre_data, aes(GENRE)) + geom_bar()
+
+#question 4.1(b) and (c)
+set.seed(111)
+
+#partition the data using stratified sampling
+train_d <- createDataPartition(genre_data$GENRE, p = .80, list= FALSE)
+
+#finding training data
+train_data <-genre_data[train_d,]
+
+#Finding testing data
+test_data <-genre_data[-train_d,]
+
+#K-fold cross validation
+set.seed(111)
+k_folds <- createFolds(train_d,k=10, list = FALSE, returnTrain = TRUE)
+train_cv <- genre_data[k_folds[[1]],]
+
+```
+
+```{r}
+data(permeability)
+ggplot(as.data.frame(permeability), aes(permeability)) + geom_histogram(color= "black",fill = "grey", bins = 5)
+```
+
+```{r}
+#question 4.2 (b) and (c)
+set.seed(111)
+p_folds <- createMultiFolds(permeability,k=3)
+p_cv <- permeability[p_folds[[1]]]
+f_cv <- fingerprints[p_folds[[1]]]
+```
+```{r}
+#question 4.3(b)
+comp=c(1:10)
+mu=c(0.444,0.500,0.533,0.545,0.542,0.537,0.534,0.534,0.520,0.507)
+Std_error=c(0.0272,0.0298,0.0302,0.0308,0.0322,0.0327,0.0333,0.0330,0.0326,0.0324)
+maxi=max(Mean)
+tolerance=round(((mu-maxi)/maxi)*100,10)
+tolerance_data=cbind(comp,mu,Std_error,tolerance)
+colnames(tolerance_data)=c('Components','Mean','Standard Error','Tolerance percent')
+tolerance_data
+```
+
+```{r}
+#Question 4.4
+
+#read the oil data
+set.seed(111)
+data(oil)
+str(oilType)
+oiltable=table(oilType)
+print(oiltable/length(oilType))
+
+#part(A)
+set.seed(111)
+oil_s=matrix(rep(0,60*10),nrow=60)
+for (i in 1:10)
+{
+  oil_s[,i]=sample(oilType,60,replace=TRUE)
+}
+table(oil_s[,1])/length(oil_s[,1])
+table(oil_s[,2])/length(oil_s[,2])
+table(oil_s[,3])/length(oil_s[,3])
+table(oil_s[,4])/length(oil_s[,4])
+table(oil_s[,5])/length(oil_s[,5])
+table(oil_s[,6])/length(oil_s[,6])
+table(oil_s[,7])/length(oil_s[,7])
+table(oil_s[,8])/length(oil_s[,8])
+table(oil_s[,9])/length(oil_s[,9])
+table(oil_s[,10])/length(oil_s[,10])
+
+
+#part(B)
+stratified_sampled=createDataPartition(oilType,p=0.60,times=7)
+table(oilType[stratified_sampled$Resample1])/length(stratified_sampled$Resample1)
+table(oilType[stratified_sampled$Resample2])/length(stratified_sampled$Resample2)
+table(oilType[stratified_sampled$Resample3])/length(stratified_sampled$Resample3)
+table(oilType[stratified_sampled$Resample4])/length(stratified_sampled$Resample4)
+table(oilType[stratified_sampled$Resample5])/length(stratified_sampled$Resample5)
+table(oilType[stratified_sampled$Resample6])/length(stratified_sampled$Resample6)
+table(oilType[stratified_sampled$Resample7])/length(stratified_sampled$Resample7)
+
+
+

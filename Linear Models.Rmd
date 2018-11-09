@@ -1,0 +1,230 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+#question 6.1
+library(caret)
+library(AppliedPredictiveModeling)
+#read the data
+data(tecator)
+colnames(endpoints)=c("water","fat","protein")
+colnames(endpoints)
+colnames(absorp)=as.factor(c(1:100))
+colnames(absorp)
+#check the missing data
+miss_data <-function(x){
+  sum(is.na(x))
+}
+na_absorp=as.matrix(apply(absorp,2,miss_data))
+#preprocessing the absorp
+#applying center, scale and box cox transformation and PCA
+preprocess_absorp =preProcess(absorp,method = c("center","scale","BoxCox", "pca"))
+transformed_absorp = predict(preprocess_absorp,absorp)
+transformed_absorp
+
+pcaObject=prcomp(absorp, center = TRUE, scale. = TRUE)
+percentVariance=pcaObject$sd^2/sum(pcaObject$sd^2)*100
+cumpercentVariance=cumsum(pcaObject$sd^2)/sum(pcaObject$sd^2)*100
+cumpercentVariance[1:6]
+plot(percentVariance,xlim=c(0,40),type='b',pch=5,col="Blue",xlab='No of components',ylab='% of total variation' )
+grid()
+
+
+#Data splitting
+train_i = sample(1:nrow(absorp), size = round(0.8*n), replace=FALSE)
+training_pred=absorp[train_i,]
+testing_pred=absorp[-train_i,]
+training_fat=as.data.frame(endpoints[train_i,2])
+testing_fat=as.data.frame(endpoints[-train_i,2])
+colnames(training.fat)=colnames(testing_fat)=c('fat')
+train_y=as.vector(as.matrix(training_fat))
+test_y=as.vector(as.matrix(testing.fat))
+```
+```{r}
+#Leave group one cross validation
+set.seed(111)
+train_control1 <- trainControl(method = "LGOCV", number = 5)
+
+#Removing highly correlated predictors
+corThresh=0.9
+tooHigh=findCorrelation(cor(absorp), corThresh)
+trainingp=training_pred[,-tooHigh]
+corr1=as.matrix(trainingp)
+colnames(corr1)=as.factor(c(1:100)[-tooHigh])
+
+lm_fit2=train(x=corr1,y=train_y,method="lm",trControl=train_control1)
+lm_fit2
+lm_pred2=predict(lm_fit2,testing_pred)
+lm_values2=data.frame(obs=test_y,pred=lm_pred2)
+defaultSummary(lm_values2)
+```
+
+```{r}
+#PCR
+set.seed(111)
+pcr_grid=expand.grid(ncomp = 1:25)
+pcr_tune1=train(training_pred,train_y,method="pcr",tuneGrid=pcr_grid,trControl=train_control1)
+pcr_tune1
+pcr_pred1=predict(pcr_tune1,testing_pred)
+pcr_values1=data.frame(obs=test_y,pred=pcr_pred1)
+defaultSummary(pcr_values1)
+plot(pcr_tune1,main="PCR")
+
+
+```
+
+```{r}
+##PLS
+set.seed(111)
+pls_tune1=train(training_pred,train_y,method="pls",tuneLength=20,trControl=train_control1, preProc = c("center","scale"))
+pls_tune1
+pls_pred1=predict(pls_tune1,testing_pred)
+pls_values1=data.frame(obs=test_y,pred=pls_pred1)
+defaultSummary(pls_values1)
+plot(pls_tune1,main="PLS")
+
+```
+```{r}
+#Ridge
+set.seed(111)
+ridge_grid1=data.frame(.lambda=seq(0,.1,length=15))
+ridge_fit1=train(training_pred,train_y,method="ridge",tuneGrid=ridge_grid1,trControl=train_control, preProc = c("center","scale"))
+ridge_fit1
+
+ridge_pred1=predict(ridge_fit1,testing_pred)
+ridge_values1=data.frame(obs=test_y,pred=ridge_pred1)
+defaultSummary(ridge_values1)
+plot(ridge_fit1,main="Ridge")
+```
+
+```{r}
+#Lasso
+set.seed(111)
+lasso_grid1=expand.grid(.fraction=seq(0.01,0.2,by=0.01))
+lasso_tune1=train(training_pred,train_y,method="lasso",tuneGrid=lasso_grid1,trControl=train_control)
+lasso_tune1
+lasso_pred1=predict(lasso_tune1,testing_pred)
+lasso_values1=data.frame(obs=test_y,pred=lasso_pred1)
+defaultSummary(lasso_values1)
+plot(lasso_tune1,main="Lasso")
+
+```
+```{r}
+#Enet
+set.seed(111)
+enet_grid1=expand.grid(.lambda=seq(.01,0.2,by=0.1),.fraction=seq(.01,0.5,by=0.1))
+enet_tune1=train(training_pred,train_y,method="enet",tuneGrid=enet_grid1,trControl=train_control, preProc = c("center","scale"))
+enet_tune1
+
+enet_pred1=predict(enet_tune1,testing_pred)
+enet_values1=data.frame(obs=test_y,pred=enet_pred1)
+defaultSummary(enet_values1)
+plot(enet_tune1,main="Enet")
+```
+
+```{r}
+#question 2
+#read data
+library(AppliedPredictiveModeling)
+data(permeability)
+#check for missing values
+miss_data <-function(x){
+  sum(is.na(x))
+}
+na_perm=as.matrix(apply(fingerprints,2,miss_data))
+
+#Near zero variance
+nzv=nearZeroVar(fingerprints)
+length(nzv)
+fingerprints_nzv=fingerprints[,-nzv]
+ncol(fingerprints)-length(nzv)
+
+#Data splitting
+set.seed(111)
+trainingRows=createDataPartition(permeability,p=.80,list=FALSE)
+training_fp=fingerprints_nzv[trainingRows,]
+testing_fp=fingerprints_nzv[-trainingRows,]
+training_perm=permeability[trainingRows]
+testing_perm=permeability[-trainingRows]
+
+#PLS
+set.seed(111)
+model_pls=train(training_fp,training_perm,method="pls",tuneLength=20,trControl=train_control1, preProc = c("center","scale"))
+model_pls
+pred_pls=predict(model_pls,testing_fp)
+pls_df=data.frame(obs=testing_perm,pred=pred_pls)
+defaultSummary(pls_df)
+plot(model_pls,main="PLS")
+
+
+
+```
+
+```{r}
+#linear model
+set.seed(111)
+lm_fit=train(x=training_fp,y=training_perm,method="lm",preProcess=c("pca"),trControl=train_control1)
+lm_fit
+lm_pred=predict(lm_fit,testing_fp)
+lm_values=data.frame(obs=testing_perm,pred=lm_pred)
+defaultSummary(lm_values)
+
+
+```
+```{r}
+#PCR
+set.seed(111)
+pcr_grid=expand.grid(ncomp = 1:20)
+pcr_tune=train(training_fp,training_perm,method="pcr",tuneGrid=pcr_grid,trControl=train_control1, preProc = c("center","scale"))
+pcr_tune
+pcr_pred=predict(pcr_tune,testing_fp)
+pcr_values=data.frame(obs=testing_perm,pred=pcr_pred)
+defaultSummary(pcr_values)
+plot(pcr_tune,main="PCR")
+
+```
+
+```{r}
+#Ridge regression
+set.seed(111)
+ridge_grid=data.frame(.lambda=seq(0,1,length=20))
+ridge_fit=train(training_fp,training_perm,method="ridge",tuneGrid=ridge_grid,trControl=train_control1, preProc = c("center","scale"))
+ridge_fit
+ridge_pred=predict(ridge_fit,testing_fp)
+ridge_values=data.frame(obs=testing_perm,pred=ridge_pred)
+defaultSummary(ridge_values)
+plot(ridge_fit,main="Ridge")
+
+```
+
+```{r}
+#Lasso
+set.seed(111)
+lasso_grid=expand.grid(.fraction=seq(0.01,0.5,by=0.01))
+lasso_tune=train(training_fp,training_perm,method="lasso",tuneGrid=lasso_grid,trControl=train_control1, preProc = c("center","scale"))
+lasso_tune
+lasso_pred=predict(lasso_tune,testing_fp)
+lasso_values=data.frame(obs=testing_perm,pred=lasso_pred)
+defaultSummary(lasso_values)
+plot(lasso_tune,main="Lasso")
+
+```
+```{r}
+#Enet
+set.seed(111)
+enet_grid=expand.grid(.lambda=seq(.01,1,by=0.1),.fraction=seq(.01,0.5,by=0.01))
+enet_tune=train(training_fp,training_perm,method="enet",tuneGrid=enet_grid,trControl=train_control1, preProc = c("center","scale"))
+enet_tune
+enet_pred=predict(enet_tune,testing_fp)
+enet_values=data.frame(obs=testing_perm,pred=enet_pred)
+defaultSummary(enet_values)
+plot(enet_tune,main="Enet")
+```
+
+
