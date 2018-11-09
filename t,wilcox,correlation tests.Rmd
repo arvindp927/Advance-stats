@@ -1,12 +1,5 @@
 ---
-title: "Problem Set 5"
 author: "Arvind Patel"
-date: '10/14/2018'
-output:
-  word_document: default
-  html_document:
-    df_print: paged
-  pdf_document: default
 ---
 
 ```{r setup, include=FALSE, echo=FALSE}
