@@ -1,6 +1,5 @@
 ---
-title: "PS 6"
-author: "Arvind Patel arvindp@mtu.edu"
+author: "Arvind Patel"
 date: "October, 2018"
 output:
   word_document: default
