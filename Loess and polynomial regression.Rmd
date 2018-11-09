@@ -1,0 +1,353 @@
+---
+title: "Problem Set 8"
+author: "Arvind Patel arvindp@mtu.edu"
+date: "November 04, 2018"
+output:
+  word_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# 1.  Orthogonal Designs
+
+In an new experiment, you have two 3-level independent variables:
+ * training (no training, standard training, interactive training)
+ * feedback (no feedback, feedback on errors, feedback on correct)
+You have create the following orthogonal design:
+```{r}
+training <- rep(c(1,1,1,0,0,0,-1,-1,-1),each=3)
+feedback <- rep(c(1,0,-1,1,0,-1,1,0,-1),each=3)
+```
+You can verify that they are orthogonal by finding their dot product, and that they are uncorrelated by finding the correlation:
+
+```{r}
+cor(training, feedback)
+training %*% feedback
+```
+
+(a) Suppose you want to add a third 3-level IV (with values -1, 0, and 1) to this design called group. Create one that is orthogonal to the two existing IVs, and verify that it is orthogonal.  To do this, look carefully at the design; you will notice that each level of training has a level of feedback, but there are three identical replications of this design.  Which of the following grouping variables are both orthogonal and uncorrelated with both feedback and train
+
+```{r}
+set.seed(100)
+group1 <- 1:27
+group2 <- rep(-1:1, 9)
+group3 <- 1:27-mean(1:27)
+group4 <- rep(1:3, 9)
+group5 <- rep(-1:1,each=9)
+group6 <- runif(27)-.5
+group7 <- rep(1:9,each=3)
+
+#group1
+cor(group1,training)
+training %*% group1   # Not orthogonal and not correlated
+
+cor(group1,feedback)
+feedback %*% group1   # Not orthogonal and not correlated
+
+#group2
+cor(group1,training)
+training %*% group2   #  orthogonal and not correlated
+
+cor(group1,feedback)
+feedback %*% group2   #  orthogonal and not correlated
+
+#group3
+cor(group1,training)
+training %*% group3   # Not orthogonal and not correlated
+
+cor(group1,feedback)
+feedback %*% group3   # Not orthogonal and not correlated
+
+#group4
+cor(group1,training)
+training %*% group4   #  orthogonal and not correlated
+
+cor(group1,feedback)
+feedback %*% group4   #  orthogonal and not correlated
+
+#group5
+cor(group1,training)
+training %*% group5   # Not orthogonal and not correlated
+
+cor(group1,feedback)
+feedback %*% group5   # orthogonal and not correlated
+
+#group6
+cor(group1,training)
+training %*% group6   # Not orthogonal and not correlated
+
+cor(group1,feedback)
+feedback %*% group6   # Not orthogonal and not correlated
+
+#group7
+cor(group1,training)
+training %*% group7   # Not orthogonal and not correlated
+
+cor(group1,feedback)
+feedback %*% group7   # Not orthogonal and not correlated
+
+
+
+```
+From the above we observe that,For group 2 and group 4, training and feedback are orthogonal and not correlated. For group 5, we see that feedback is orthogonal and not correlated. For all other groups, feedback and training are not correlated and not orthogonal.
+
+# 2. Regression with orthogonal and uncorrelated predictors.
+
+Suppose we have a data set in which we have three records from a bunch of buyers. The first is their initial purchase on our website, the second is their purchase during a buy-one get-one promotion, and the third is their most recent purchase.  We also have recorded their age, as we suspect older customers buy more. 
+
+```{r}
+
+data <- data.frame(buyerid = group7,
+                   timeframe=group4)
+
+set.seed(103)
+
+buyerbase <- runif(9)
+timebase <- c(1,2,2.5)
+agebase  <- 20+runif(9)* 40
+
+data$age <- round(agebase[data$buyerid])
+data$purchase <- round( 25 + buyerbase[data$buyerid] * 50 +
+                          data$age * .5+ 
+                          timebase[data$timeframe] * 7 +
+                          rnorm(27)*4,2)
+```
+```{r}
+data <- read.table(text=
+"row  buyerid timeframe age purchase
+1        1         1  33    57.80
+2        1         2  33    62.57
+3        1         3  33    69.93
+4        2         1  38    54.65
+5        2         2  38    71.48
+6        2         3  38    63.58
+7        3         1  31    70.04
+8        3         2  31    82.43
+9        3         3  31    84.55
+10       4         1  52    82.26
+11       4         2  52    93.35
+12       4         3  52    97.40
+13       5         1  53    65.57
+14       5         2  53    70.54
+15       5         3  53    69.12
+16       6         1  55    59.10
+17       6         2  55    73.83
+18       6         3  55    72.33
+19       7         1  25    70.92
+20       7         2  25    76.99
+21       7         3  25    77.22
+22       8         1  26    50.54
+23       8         2  26    64.44
+24       8         3  26    67.53
+25       9         1  31    50.79
+26       9         2  31    56.01
+27       9         3  31    57.03",header=T)
+```
+Create a regression model to predict purchase amount by timeframe and age, and compare this model to the models using only timeframe and only age as predictors. Do the coefficients differ across models (including intercept)?  Then, transform the predictors so that they are also orthogonal.  Examine the same models with the orthogal predictors.  Now, do the coefficient differ across models? For the second set of models, give an explanation of how to interpret each coefficient of the orthogonal predictors, and especially explain how it differs from your interpretation for the original predictors. Finally, suppose that the first observation was missing, (you can specify data2 <- data[-1,] to remove that point, and then use data2 in the model).  Look at the same models again. Do they produce the same estimates? Why?
+
+```{r}
+#model using timeframe and age as predictors
+lm1 <- lm(purchase~ timeframe + age, data = data)
+summary(lm1)
+#model using timeframe as predictor
+lm2 <- lm(purchase~ timeframe, data = data)
+summary(lm2)
+#model using age as predictor
+lm3 <- lm(purchase~ age, data = data)
+summary(lm3)
+#Yes the coeffecients changes accross the models with significant results
+
+
+```
+We obesrve, the coeffecients of the intercept changes accross the models with significant results. For model 1 when timeframe and age are the predictors, the intercept is 46.32 and we observe that Rsquared value is 0.2369 with significant p value of 0.039. For model 2 when timeframe is the predictor, the intercept estimate is 58.553 and R squared value of 0.141 with significant p value of 0.05. Since we removed the age predictor, there is a decrease in Rsquared value. For model 3, with age as the predictor, there is further decrease in R square value and the F statistic has no significant results.
+
+
+```{r}
+data$timeframe_t <- data$timeframe - mean(data$timeframe)
+data$age_t <- data$age - mean(data$age)
+
+lm1_t <- lm(purchase~ timeframe_t + age_t, data = data)
+summary(lm1_t)
+#model using timeframe as predictor
+lm2_t <- lm(purchase~ timeframe_t, data = data)
+summary(lm2_t)
+#model using age as predictor
+lm3_t <- lm(purchase~ age_t, data = data)
+summary(lm3_t)
+#coeffecients doesnt differ accorss the model after orthogonality
+
+```
+When we make timeframe and age orthogonal, we find that for all the three models have same coeffecients of intercept, timeframe and age.
+
+
+```{r}
+#Data2 same operations as above
+data2 <- data[-1,]
+#model using timeframe and age as predictors
+lm4 <- lm(purchase~ timeframe + age, data = data2)
+summary(lm4)
+#model using timeframe as predictor
+lm5 <- lm(purchase~ timeframe, data = data2)
+summary(lm5)
+#model using age as predictor
+lm6 <- lm(purchase~ age, data = data2)
+summary(lm6)
+
+#Yes the coeffecients changes accross the models with significant results. Therefore transforming predictors
+```
+For Data2 when a record is removed, for the coeffecients for intercept, timeframe and age change for all the three models. 
+
+```{r}
+data2$timeframe_t <- data2$timeframe - mean(data2$timeframe)
+data2$age_t <- data2$age - mean(data2$age)
+
+lm4_t <- lm(purchase~ timeframe_t + age_t, data = data2)
+summary(lm4_t)
+#model using timeframe as predictor
+lm5_t <- lm(purchase~ timeframe_t, data = data2)
+summary(lm5_t)
+#model using age as predictor
+lm6_t <- lm(purchase~ age_t, data = data2)
+summary(lm6_t)
+```
+After transforming timeframe and age to orthogonal, we find that the coeffecients for all the three models still remain the same.But we find that the F statistics do not produce significant results.
+
+# 3. Modeling a time series.
+
+The following data show download records for a piece of software over roughly a 10-year period.
+
+```{r,fig.width=8,fig.height=5}
+down <- read.csv("DownloadData.csv")
+down$Month <- as.factor(substr(down$Date,6,8))
+down$MonthNumber <- 1:nrow(down)
+
+plot(as.numeric(down$Date),down$Downloads,xaxt="n",bty="n",pch=16,cex=.5,type="o",las=1,
+     ylab="Downloads",xlab="Year")
+axis(1,0:12*12,2006:2018,las=3,cex.axis=.95)
+
+```
+
+The pattern involves both growth over time and cyclic variations across the year.
+
+
+## A. Loess regression.
+
+Fit a loess model to the down, using the same predictor. Select a span parameter that is reasonable,
+and compute R^2 (observed versus fitted) and RSE.
+```{r}
+lmodel8 <- loess(Downloads ~ MonthNumber, data = down , span = 0.08)
+lmodel10 <- loess(Downloads ~ MonthNumber, data = down , span = 0.10)
+lmodel25 <- loess(Downloads ~ MonthNumber, data = down , span = 0.25)
+lmodel50 <- loess(Downloads ~ MonthNumber, data = down , span = 0.50)
+
+#Residual Square Error
+summary(lmodel8)
+summary(lmodel10)
+summary(lmodel25)
+summary(lmodel50)
+
+#get smoothed data
+smoothed8 <- predict(lmodel8)
+smoothed10 <- predict(lmodel10)
+smoothed25 <- predict(lmodel25)
+smoothed50 <- predict(lmodel50)
+
+#plot it
+plot(as.numeric(down$Date),down$Downloads,xaxt="n",bty="n",pch=16,cex=.5,type="o",las=1,
+     ylab="Downloads",xlab="Year")
+axis(1,0:12*12,2006:2018,las=3,cex.axis=.95)
+lines(smoothed8, x=down$Date, col="cyan")
+lines(smoothed10, x=down$Date, col="red")
+lines(smoothed25, x=down$Date, col="green")
+lines(smoothed50, x=down$Date, col="blue")
+
+#R^2 calculation
+library(mgcv)
+summary(gam(Downloads ~ MonthNumber, data = down))
+```
+Reasonable span - 
+I have used span of 0.08, 0.1, 0.25, 0.50 for fitting the data with loess regression, we find that from the graph above span of 0.08 overfits the data and span of 0.50 underfits it. 
+So, I have selected the final model with the span of 0.1 which does a good job in predicting the data.
+For the model with span 0.1, we get RSE of 330.5 which is further increases if we increase the span value.
+The Adjusted R squared value for the best model is about 0.399
+
+## B. Polynomial regression.
+Create a polynomial regression of the down, using just MonthNumber as a predictor within poly().  Use either an information metric (AIC or BIC) or series of F-tests to determine your preferred model.  Plot the down as well as the prediction on the same graph, and describe how good the model fits in overall terms (using R^2, RMSE, or similar measures). Compare to the model in Part 1 with respect to R^2 and RMSE, as well as the equivalent number of parameters.  Does one seem better than the other? Why?
+
+```{r}
+poly1 <- lm(down$Downloads~poly(down$MonthNumber,1))
+summary(poly1)
+
+poly2 <- lm(down$Downloads~poly(down$MonthNumber,5))
+summary(poly2)
+
+poly3 <- lm(down$Downloads~poly(down$MonthNumber,14))
+summary(poly3)
+
+poly4 <- lm(down$Downloads~poly(down$MonthNumber,27))
+summary(poly4)
+
+
+
+plot(as.numeric(down$MonthNumber),down$Downloads,xaxt="n",bty="n",pch=16,cex=.5,type="o",las=1,ylab="Downloads",xlab="Year", main = "polynomial regression with order 1,5,14,27")
+axis(1,0:12*12,2006:2018,las=3,cex.axis=.95)
+lines(predict(poly1), x=down$Date, col="cyan")
+lines(predict(poly2), x=down$Date, col="yellow")
+lines(predict(poly3), x=down$Date, col="blue")
+lines(predict(poly4), x=down$Date, col="red")
+
+extractAIC(poly1)
+extractAIC(poly2)
+extractAIC(poly3)
+extractAIC(poly4)
+
+```
+The above plot between Downloads and year with fitted polynomial regression line with order of 1, 5, 11, 27, we can clearly see that as the order of the polynomial is increased the data tends to fit the well. For order 14, we find the prediction fits the actual data without overfitting. For higher orders, the prediction line tends to fit each point and hence it causes high generalization error and over fits the data.
+
+For model 1, the R squared value of 40% is obtained which is too low and high AIC value of 1774.614 is obtained which suggests that the model is underfit for prediction and would cause high prediction error. Similarly, for model 2, low R squared value of 56% and High AIC value of 1738.086 is obtained which makes it underfit for prediction.
+
+For model 3, we have a polynomial line of order of 14 fitted for prediction. For this model, we get R squared value of about 70% which is pretty good with a low AIC value of 1702.746 as compared to other models. Model 4 has AIC value of 1715.20 and R squared value of 73% which over fits the data.
+
+Hence, model 3 with the order of 14 is best model selected because of high R squared and low AIC value as compared to other models
+
+
+## C. Adding month predictor
+
+We know that there are cyclic patterns across the year related to summer/winter.  To address this, add down$Month as a predictor to a polynomial model (Also add the +0 intercept so each month has a unique value). Be sure Month is a categorical variable/factor, so it does not get fitted with a linear trend.  Try reducing the polynomial predictor coefficient until you have a model that fits equivalently well to the ones in part A and B (using RMSE and R^2 criteria).  Compare the number of parameters total in this model to the previous two models, and discuss whether this model is better than the models in Parts 1 and 2.  Finally, show the average effect across the year by plotting the monthly parameters alone.
+
+
+```{r}
+p1 <- lm(down$Downloads ~ poly(down$MonthNumber,14)+down$Month +0)
+summary(p1)
+plot(as.numeric(down$MonthNumber),down$Downloads,xaxt="n",bty="n",pch=16,cex=.5,type="o",las=1,ylab="Downloads",xlab="Year", main = "polynomial regression with order 14 and month predictor")
+axis(1,0:12*12,2006:2018,las=3,cex.axis=.95)
+points(down$MonthNumber, p1$fitted.values, col="blue", type ="l")
+```
+We fit the above model with polynomial regression model with the order of 14(which was the best model in part 2). Also we add the month and the intercept of 0 to the model, we get the R squared value of about 99% which means it is over fitted. SO we try to reduce the order of polynomial function.
+Also, from the plot above we clearly observe the Overfitting in the data
+
+
+By adjusting the order we get the following model and we try to reduce the over fitting in the model.
+```{r}
+p2 <- lm(down$Downloads ~ poly(down$MonthNumber,1)+down$Month +0)
+summary(p2)
+plot(as.numeric(down$MonthNumber),down$Downloads,xaxt="n",bty="n",pch=16,cex=.5,type="o",las=1,ylab="Downloads",xlab="Year", main = "polynomial regression with order 1 and month predictor")
+axis(1,0:12*12,2006:2018,las=3,cex.axis=.95)
+points(down$MonthNumber, p2$fitted.values, col="blue", type ="l")
+```
+In the model above, we decrease the the order of polynomial function from 14 to 1, still we get high R squared value of about 94%.  Also, we get the F statistic of 163.3 with a p value<0.05, hence we get significant results of the model.
+From the plot we observe that our data tends to fit model
+```{r}
+#Final model 
+p3 <- lm(down$Downloads ~ down$Month)
+summary(p3)
+plot(as.numeric(down$Date),down$Downloads,xaxt="n",bty="n",pch=16,cex=.5,type="o",las=1,ylab="Downloads",xlab="Year", main = "Final Model")
+axis(1,0:12*12,2006:2018,las=3,cex.axis=.95)
+points(down$Date, p3$fitted.values, col="blue", type ="l")
+
+```
+The above model has month as the predictor and we find the intercept of 1412.67 with significant results and p value <0.05. It has a low F statistics of 2.35 and R squared value of 0.164
